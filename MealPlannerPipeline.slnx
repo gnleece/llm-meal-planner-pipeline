@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/App/">
+    <Project Path="App/MealPlannerPipeline.App.csproj" />
+  </Folder>
+  <Folder Name="/Core/">
+    <Project Path="Core/MealPlannerPipeline.Core.csproj" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Infrastructure/MealPlannerPipeline.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/Stages/">
+    <Project Path="Stages/MealPlannerPipeline.Stages.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/MealPlannerPipeline.Tests.csproj" />
+  </Folder>
+</Solution>
