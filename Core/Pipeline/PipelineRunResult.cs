@@ -12,10 +12,20 @@ public class PipelineRunResult
     public string? FailedStage { get; private init; }
     public string? ErrorMessage { get; private init; }
 
+    // Phase 2: per-stage and end-to-end eval results
+    public EvalResult? MealPlanEval { get; private init; }
+    public IReadOnlyList<EvalResult>? RecipeEvals { get; private init; }
+    public EvalResult? GroceryEval { get; private init; }
+    public EvalResult? EndToEndEval { get; private init; }
+
     public static PipelineRunResult Success(
         MealPlanOutput plan,
         List<RecipeOutput> recipes,
         GroceryOutput grocery,
+        EvalResult mealPlanEval,
+        IReadOnlyList<EvalResult> recipeEvals,
+        EvalResult groceryEval,
+        EvalResult endToEndEval,
         TimeSpan duration) =>
         new()
         {
@@ -23,6 +33,10 @@ public class PipelineRunResult
             MealPlan = plan,
             Recipes = recipes,
             GroceryList = grocery,
+            MealPlanEval = mealPlanEval,
+            RecipeEvals = recipeEvals,
+            GroceryEval = groceryEval,
+            EndToEndEval = endToEndEval,
             Duration = duration
         };
 

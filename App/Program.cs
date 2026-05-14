@@ -63,4 +63,22 @@ foreach (var item in result.GroceryList!.Items)
     Console.WriteLine($"  {item.TotalQuantity} {item.Unit} {item.Name}");
 
 Console.WriteLine();
+Console.WriteLine("=== EVAL SUMMARY ===");
+PrintEval("Meal Plan    ", result.MealPlanEval);
+if (result.RecipeEvals != null)
+    for (int i = 0; i < result.RecipeEvals.Count; i++)
+        PrintEval($"Recipe [{result.Recipes![i].MealName}]", result.RecipeEvals[i]);
+PrintEval("Grocery List ", result.GroceryEval);
+PrintEval("End-to-End   ", result.EndToEndEval);
+
+Console.WriteLine();
 Console.WriteLine($"Pipeline completed in {result.Duration.TotalSeconds:F1}s");
+
+static void PrintEval(string label, EvalResult? eval)
+{
+    if (eval is null) return;
+    var status = eval.Passed ? "PASS" : "FAIL";
+    Console.WriteLine($"  {label}: {status} (score={eval.Score:P0})");
+    foreach (var issue in eval.Issues)
+        Console.WriteLine($"    ! {issue}");
+}

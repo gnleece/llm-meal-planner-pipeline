@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MealPlannerPipeline.Core.Contracts;
+using MealPlannerPipeline.Core.Evals;
 using Microsoft.Extensions.Logging;
 
 namespace MealPlannerPipeline.Core.Pipeline;
@@ -38,9 +39,15 @@ public class MealPlannerOrchestrator
             return PipelineRunResult.Failed(_mealPlanner.StageName, mealPlanResult.ErrorMessage!);
         }
 
+        var mealPlanEval = await new MealPlanEvaluator(input).EvaluateAsync(mealPlanResult.Value!);
+        LogEvalResult(_mealPlanner.StageName, mealPlanEval);
+
         // Stage 2 — one recipe per meal; skip failed recipes rather than aborting the whole run
         // Phase 4 will replace this skip-and-continue with eval-driven retries
         var recipes = new List<RecipeOutput>();
+        var recipeEvals = new List<EvalResult>();
+        var recipeEvaluator = new RecipeEvaluator(input);
+
         foreach (var meal in mealPlanResult.Value!.Days)
         {
             var recipeResult = await _recipeGenerator.ExecuteAsync(meal, cancellationToken);
@@ -50,7 +57,12 @@ public class MealPlannerOrchestrator
                     meal.MealName, recipeResult.ErrorMessage);
                 continue;
             }
+
+            var recipeEval = await recipeEvaluator.EvaluateAsync(recipeResult.Value!);
+            LogEvalResult($"{_recipeGenerator.StageName}[{meal.MealName}]", recipeEval);
+
             recipes.Add(recipeResult.Value!);
+            recipeEvals.Add(recipeEval);
         }
 
         if (recipes.Count == 0)
@@ -73,9 +85,27 @@ public class MealPlannerOrchestrator
             return PipelineRunResult.Failed(_groceryAggregator.StageName, groceryResult.ErrorMessage!);
         }
 
+        var groceryEval = await new GroceryEvaluator(recipes).EvaluateAsync(groceryResult.Value!);
+        LogEvalResult(_groceryAggregator.StageName, groceryEval);
+
+        var endToEndEval = new EndToEndEvaluator(input)
+            .Evaluate(mealPlanResult.Value!, recipes, groceryResult.Value!);
+        LogEvalResult("EndToEnd", endToEndEval);
+
         sw.Stop();
         _logger.LogInformation("=== Pipeline Run Completed in {Ms}ms ===", sw.ElapsedMilliseconds);
 
-        return PipelineRunResult.Success(mealPlanResult.Value!, recipes, groceryResult.Value!, sw.Elapsed);
+        return PipelineRunResult.Success(
+            mealPlanResult.Value!, recipes, groceryResult.Value!,
+            mealPlanEval, recipeEvals, groceryEval, endToEndEval,
+            sw.Elapsed);
+    }
+
+    private void LogEvalResult(string stage, EvalResult eval)
+    {
+        var status = eval.Passed ? "PASS" : "FAIL";
+        _logger.LogInformation("[Eval] {Stage}: {Status} (score={Score:F2})", stage, status, eval.Score);
+        foreach (var issue in eval.Issues)
+            _logger.LogWarning("[Eval] {Stage} issue: {Issue}", stage, issue);
     }
 }
