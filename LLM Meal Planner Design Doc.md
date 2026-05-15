@@ -543,6 +543,38 @@ Then verify:
 
 ---
 
+## CLI Reference (Phase 3)
+
+Run the app from the `App/` directory or via `dotnet run --project App`:
+
+```sh
+dotnet run --project App                                              # Normal end-to-end run
+dotnet run --project App -- --use-known-good-meal-plan               # Bypass MealPlanner with hardcoded data
+dotnet run --project App -- --use-known-good-recipes                 # Bypass RecipeGenerator with hardcoded data
+dotnet run --project App -- --inject-meal-plan-failure=<mode>        # Inject a meal plan failure
+dotnet run --project App -- --inject-recipe-failure=<mode>           # Inject a recipe failure
+dotnet run --project App -- --help                                   # Print flag reference
+```
+
+Failure modes:
+
+| Mode | What it injects |
+|---|---|
+| `malformed-json` | Unparseable JSON — triggers a parse failure and halts the stage |
+| `dietary-violation` | Non-vegetarian output (e.g. chicken, beef) — evals should catch and flag |
+| `missing-ingredients` | Empty ingredients list — RecipeEvaluator should flag |
+| `exceed-calories` | Calories over the configured limit — evals should flag |
+
+Flags can be combined. For example, to verify that evals catch dietary violations when the meal plan is bypassed with known-good data and only the recipe stage is broken:
+
+```sh
+dotnet run --project App -- --use-known-good-meal-plan --inject-recipe-failure=dietary-violation
+```
+
+Every run writes a JSON trace file to `runs/<run-id>.json` capturing stage inputs, prompts, raw LLM output, parsed output, eval scores, and injection flags.
+
+---
+
 # Phase 4 — Eval-Driven Retries
 
 ## Goal

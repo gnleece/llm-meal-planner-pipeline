@@ -34,7 +34,7 @@ public class RecipeGeneratorStage : IPipelineStage<PlannedMeal, RecipeOutput>
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{Stage}] LLM call failed for {Meal}", StageName, input.MealName);
-            return StageResult<RecipeOutput>.Failure($"LLM call failed: {ex.Message}");
+            return StageResult<RecipeOutput>.Failure($"LLM call failed: {ex.Message}", prompt: prompt);
         }
 
         _logger.LogDebug("[{Stage}] Raw LLM output for {Meal}: {Raw}", StageName, input.MealName, raw);
@@ -46,13 +46,13 @@ public class RecipeGeneratorStage : IPipelineStage<PlannedMeal, RecipeOutput>
                          ?? throw new JsonException("Deserialized to null.");
             _logger.LogInformation("[{Stage}] Success — {Meal}: {IngCount} ingredients, {StepCount} steps",
                 StageName, result.MealName, result.Ingredients.Count, result.Steps.Count);
-            return StageResult<RecipeOutput>.Success(result, raw);
+            return StageResult<RecipeOutput>.Success(result, raw, prompt);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "[{Stage}] JSON parse failed for {Meal}. Raw output: {Raw}",
                 StageName, input.MealName, raw);
-            return StageResult<RecipeOutput>.Failure($"JSON parse failed: {ex.Message}", raw);
+            return StageResult<RecipeOutput>.Failure($"JSON parse failed: {ex.Message}", raw, prompt);
         }
     }
 

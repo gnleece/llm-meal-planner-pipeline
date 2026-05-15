@@ -1,4 +1,5 @@
 using MealPlannerPipeline.Core.Contracts;
+using MealPlannerPipeline.Core.Traces;
 
 namespace MealPlannerPipeline.Core.Pipeline;
 
@@ -18,6 +19,9 @@ public class PipelineRunResult
     public EvalResult? GroceryEval { get; private init; }
     public EvalResult? EndToEndEval { get; private init; }
 
+    // Phase 3: full pipeline trace
+    public PipelineTrace? Trace { get; private init; }
+
     public static PipelineRunResult Success(
         MealPlanOutput plan,
         List<RecipeOutput> recipes,
@@ -26,7 +30,8 @@ public class PipelineRunResult
         IReadOnlyList<EvalResult> recipeEvals,
         EvalResult groceryEval,
         EvalResult endToEndEval,
-        TimeSpan duration) =>
+        TimeSpan duration,
+        PipelineTrace trace) =>
         new()
         {
             IsSuccess = true,
@@ -37,9 +42,10 @@ public class PipelineRunResult
             RecipeEvals = recipeEvals,
             GroceryEval = groceryEval,
             EndToEndEval = endToEndEval,
-            Duration = duration
+            Duration = duration,
+            Trace = trace,
         };
 
-    public static PipelineRunResult Failed(string stage, string error) =>
-        new() { IsSuccess = false, FailedStage = stage, ErrorMessage = error };
+    public static PipelineRunResult Failed(string stage, string error, PipelineTrace? trace = null) =>
+        new() { IsSuccess = false, FailedStage = stage, ErrorMessage = error, Trace = trace };
 }

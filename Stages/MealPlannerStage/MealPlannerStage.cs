@@ -35,7 +35,7 @@ public class MealPlannerStage : IPipelineStage<PipelineInput, MealPlanOutput>
         catch (Exception ex)
         {
             _logger.LogError(ex, "[{Stage}] LLM call failed", StageName);
-            return StageResult<MealPlanOutput>.Failure($"LLM call failed: {ex.Message}");
+            return StageResult<MealPlanOutput>.Failure($"LLM call failed: {ex.Message}", prompt: prompt);
         }
 
         _logger.LogDebug("[{Stage}] Raw LLM output: {Raw}", StageName, raw);
@@ -46,12 +46,12 @@ public class MealPlannerStage : IPipelineStage<PipelineInput, MealPlanOutput>
             var result = JsonSerializer.Deserialize<MealPlanOutput>(sanitized, JsonOptions.Default)
                          ?? throw new JsonException("Deserialized to null.");
             _logger.LogInformation("[{Stage}] Success — {Count} meals planned", StageName, result.Days.Count);
-            return StageResult<MealPlanOutput>.Success(result, raw);
+            return StageResult<MealPlanOutput>.Success(result, raw, prompt);
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "[{Stage}] JSON parse failed. Raw output: {Raw}", StageName, raw);
-            return StageResult<MealPlanOutput>.Failure($"JSON parse failed: {ex.Message}", raw);
+            return StageResult<MealPlanOutput>.Failure($"JSON parse failed: {ex.Message}", raw, prompt);
         }
     }
 

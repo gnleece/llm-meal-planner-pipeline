@@ -33,10 +33,11 @@ public class GroceryEvaluator : IEvaluator<GroceryOutput>
             .GroupBy(i => (Name: i.Name.ToLowerInvariant(), Unit: i.Unit.ToLowerInvariant()))
             .ToDictionary(g => g.Key, g => g.Sum(i => i.Quantity));
 
+        // Group before building the lookup — the input may contain duplicates (that's what check 1 detects).
+        // We still want checks 2 and 3 to run rather than throwing.
         var groceryLookup = grocery.Items
-            .ToDictionary(
-                i => (i.Name.ToLowerInvariant(), i.Unit.ToLowerInvariant()),
-                i => i.TotalQuantity);
+            .GroupBy(i => (i.Name.ToLowerInvariant(), i.Unit.ToLowerInvariant()))
+            .ToDictionary(g => g.Key, g => g.Sum(i => i.TotalQuantity));
 
         // Check 2: all recipe ingredients represented in grocery list
         var missing = expected.Keys.Where(k => !groceryLookup.ContainsKey(k)).ToList();
